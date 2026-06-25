@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Instagram — @recorrenciadehonorarios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:#07090f;color:#e2e8f0;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;
+  font-size:13px;min-height:100vh;
+}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#0d1118;}
+::-webkit-scrollbar-thumb{background:#2d3748;border-radius:3px;}
+
+.hdr{
+  background:linear-gradient(90deg,#0c0a20,#141035,#1a1050);
+  border-bottom:2px solid #4f46e5;
+  padding:9px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.hdr-l{display:flex;align-items:center;gap:12px;}
+.profile-pic{
+  width:52px;height:52px;border-radius:50%;object-fit:cover;
+  border:2px solid #818cf8;background:#1e1b4b;
+  flex-shrink:0;
+}
+.profile-pic-placeholder{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  flex-shrink:0;
+}
+.hdr-name{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.hdr-sub{font-size:12px;color:#818cf8;margin-top:3px;}
+.hdr-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pill{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  border-radius:20px;padding:5px 14px;font-size:12.5px;color:#c7d2fe;
+  display:flex;align-items:center;gap:5px;
+}
+.live{width:6px;height:6px;background:#4ade80;border-radius:50%;animation:blink 1.8s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.state-overlay{
+  position:fixed;inset:0;background:#07090f;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;z-index:200;transition:opacity .4s;
+}
+.state-overlay.hidden{opacity:0;pointer-events:none;}
+.spinner{
+  width:40px;height:40px;border:3px solid #1e293b;
+  border-top-color:#818cf8;border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state-msg{font-size:13px;color:#475569;}
+
+.strip{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
+  padding:12px 14px 2px;
+}
+.kc{
+  background:#0d1118;border:1px solid #1a2035;border-radius:10px;
+  padding:16px 20px;position:relative;overflow:hidden;
+}
+.kc::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:10px 10px 0 0;}
+.k1::after{background:linear-gradient(90deg,#818cf8,#a5b4fc);}
+.k2::after{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+.k3::after{background:linear-gradient(90deg,#10b981,#34d399);}
+.k4::after{background:linear-gradient(90deg,#ec4899,#f472b6);}
+.k5::after{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+.k6::after{background:linear-gradient(90deg,#8b5cf6,#a78bfa);}
+.kl{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#7c8aa0;font-weight:700;margin-bottom:8px;}
+.kv{font-size:50px;font-weight:900;color:#f8fafc;letter-spacing:-.03em;line-height:1;}
+.kv small{font-size:22px;font-weight:600;}
+.kt{font-size:15px;font-weight:600;margin-top:8px;}
+.up{color:#4ade80}.dn{color:#f87171}.wn{color:#fb923c}.nu{color:#64748b}
+
+.body{display:grid;grid-template-columns:260px 1fr;gap:8px;padding:8px 14px 12px;}
+.cpanel{
+  background:#0d1118;border:1px solid #1a2035;border-radius:8px;
+  padding:14px;display:flex;flex-direction:column;gap:14px;
+}
+.ptitle{
+  font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:#9fb0c7;display:flex;align-items:center;gap:7px;
+}
+.pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.freq-bar-bg{height:7px;background:#1a2035;border-radius:4px;overflow:hidden;margin-top:3px;}
+.freq-bar{height:100%;border-radius:4px;}
+.freq-label{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:#cbd5e1;margin-top:6px;font-weight:600;}
+.freq-label b{font-size:22px;}
+.fmt-item{display:flex;align-items:center;gap:9px;font-size:15px;color:#cbd5e1;margin-top:7px;font-weight:600;}
+.fmt-bar{height:10px;border-radius:3px;}
+.eng-info{
+  font-size:11.5px;color:#9fb0c7;line-height:1.7;
+  background:#0a0e17;border-radius:6px;padding:10px 12px;border:1px solid #1a2035;
+}
+.eng-info b{color:#a5b4fc;}
+
+.rstack{display:flex;flex-direction:column;gap:6px;}
+.sec{background:#0d1118;border:1px solid #1a2035;border-radius:8px;padding:12px 14px;}
+.sec-hdr{
+  display:flex;align-items:baseline;gap:8px;margin-bottom:7px;
+  border-bottom:1px solid #1a2035;padding-bottom:6px;
+}
+.sec-name{font-size:16px;font-weight:800;letter-spacing:-.01em;}
+.sec-count{font-size:12px;color:#7c8aa0;}
+.sec-note{margin-left:auto;font-size:8px;color:#334155;font-style:italic;}
+
+.mchips{display:grid;gap:7px;margin-bottom:12px;}
+.mchips.c8{grid-template-columns:repeat(8,1fr);}
+.mchips.c7{grid-template-columns:repeat(7,1fr);}
+.mc{
+  background:#111827;border:1px solid #1e293b;border-radius:8px;
+  padding:10px 7px;text-align:center;
+}
+.mc-icon{font-size:16px;display:block;margin-bottom:5px;}
+.mc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:#7c8aa0;font-weight:700;}
+.mc-val{font-size:26px;font-weight:800;color:#f1f5f9;line-height:1.15;margin-top:3px;}
+.mc-val small{font-size:15px;font-weight:600;}
+.mc-sub{font-size:10px;color:#64748b;margin-top:4px;}
+.mc-sub.good{color:#4ade80}.mc-sub.bad{color:#f87171}.mc-sub.warn{color:#fb923c}
+.mc.highlight{border-color:#312e81;}
+.mc.highlight .mc-val{color:#a5b4fc;}
+.mc.highlight-gold{border-color:#78350f;}
+.mc.highlight-gold .mc-val{color:#fbbf24;}
+
+.t5{display:grid;grid-template-columns:repeat(5,minmax(0,150px));gap:10px;justify-content:space-between;}
+.ti{display:flex;flex-direction:column;gap:3px;}
+.thumb{
+  aspect-ratio:1/1;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;cursor:default;
+  background:#1e293b;
+  transition:transform .15s;
+}
+.thumb:hover{transform:scale(1.04);}
+.thumb img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  display:block;
+}
+.thumb-fallback{font-size:26px;z-index:1;position:relative;}
+.t-rank{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:#fff;font-size:9px;font-weight:800;border-radius:3px;padding:1px 5px;z-index:2;}
+.t-type{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);color:#e2e8f0;font-size:7.5px;font-weight:700;border-radius:3px;padding:1px 4px;z-index:2;}
+.t-bar{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(0,0,0,.9),transparent);padding:4px 5px 4px;z-index:2;}
+.t-main{font-size:11px;font-weight:800;color:#fff;display:flex;justify-content:space-between;align-items:center;}
+.kw-row{display:flex;flex-wrap:wrap;gap:2px;}
+.kw{font-size:7.5px;background:#111827;color:#64748b;border-radius:3px;padding:1px 4px;border:1px solid #1e293b;line-height:1.5;}
+.tst{display:flex;justify-content:space-between;font-size:8.5px;color:#475569;}
+.tst b{color:#94a3b8;}
+.thumb a.permalink{
+  position:absolute;inset:0;z-index:3;
+  opacity:0;background:rgba(79,70,229,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#fff;font-weight:700;
+  transition:opacity .2s;text-decoration:none;
+}
+.thumb:hover a.permalink{opacity:1;}
+.footer{text-align:right;font-size:8px;color:#1e293b;padding:2px 12px 8px;}
+</style>
+</head>
+<body>
+
+<div class="state-overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="state-msg" id="overlay-msg">Carregando dados do Instagram...</div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="profile-pic-placeholder" id="profile-pic-wrap">📱</div>
+    <div>
+      <div class="hdr-name" id="hdr-username">@recorrenciadehonorarios</div>
+      <div class="hdr-sub">Dashboard de Performance · Últimos 30 dias · Instagram</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="pill"><div class="live"></div><span id="hdr-updated">Carregando...</span></div>
+    <div class="pill" id="hdr-date"></div>
+    <div class="pill" id="hdr-posts"></div>
+  </div>
+</div>
+
+<!-- KPI STRIP -->
+<div class="strip">
+  <div class="kc k1">
+    <div class="kl">Seguidores</div>
+    <div class="kv" id="kpi-followers">—</div>
+    <div class="kt up" id="kpi-followers-sub">—</div>
+  </div>
+  <div class="kc k2">
+    <div class="kl">Curtidas — Média/post</div>
+    <div class="kv" id="kpi-avg-likes">—</div>
+    <div class="kt nu">todos os formatos</div>
+  </div>
+  <div class="kc k3">
+    <div class="kl">Comentários — Média/post</div>
+    <div class="kv" id="kpi-avg-comments">—</div>
+    <div class="kt nu">todos os formatos</div>
+  </div>
+  <div class="kc k4">
+    <div class="kl">Salvamentos — Média/post</div>
+    <div class="kv" id="kpi-avg-saves">—</div>
+    <div class="kt nu" id="kpi-saves-note">requer insights</div>
+  </div>
+  <div class="kc k5">
+    <div class="kl">Compartilham. — Média/post</div>
+    <div class="kv" id="kpi-avg-shares">—</div>
+    <div class="kt nu">↗️ encaminhamentos</div>
+  </div>
+  <div class="kc k6">
+    <div class="kl">Alcance — Média/post</div>
+    <div class="kv" id="kpi-avg-reach">—</div>
+    <div class="kt nu" id="kpi-reach-note">requer insights</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body">
+
+  <!-- LEFT: Charts + info -->
+  <div class="cpanel">
+    <div class="ptitle"><div class="pdot" style="background:#818cf8;"></div>Seguidores — 30 dias</div>
+    <svg id="spark" width="100%" height="145" viewBox="0 0 165 145" style="overflow:visible;"></svg>
+
+    <div class="ptitle"><div class="pdot" style="background:#f59e0b;"></div>Frequência Média</div>
+    <div>
+      <div class="freq-label"><span>Reels</span><b class="up" id="freq-reels">—</b></div>
+      <div class="freq-bar-bg"><div class="freq-bar" id="freq-reels-bar" style="width:0%;background:linear-gradient(90deg,#ec4899,#f472b6);"></div></div>
+      <div class="freq-label" style="margin-top:5px;"><span>Carrosséis</span><b class="up" id="freq-carrs">—</b></div>
+      <div class="freq-bar-bg"><div class="freq-bar" id="freq-carrs-bar" style="width:0%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+      <div style="font-size:7px;color:#334155;margin-top:3px;">Views ÷ Alcance · &gt;2× = re-exibição ao mesmo público</div>
+    </div>
+
+    <div class="ptitle"><div class="pdot" style="background:#10b981;"></div>Mix de Conteúdo 30d</div>
+    <div id="fmt-mix">
+      <div class="fmt-item"><div class="fmt-bar" style="width:54px;background:#ec4899;"></div><span id="fmt-reels">Reels</span></div>
+      <div class="fmt-item"><div class="fmt-bar" style="width:42px;background:#f59e0b;"></div><span id="fmt-carrs">Carrosséis</span></div>
+      <div class="fmt-item"><div class="fmt-bar" style="width:24px;background:#818cf8;"></div><span id="fmt-posts">Posts</span></div>
+    </div>
+
+    <div class="ptitle"><div class="pdot" style="background:#f87171;"></div>O que é Eng. Rate?</div>
+    <div class="eng-info">
+      <b>Fórmula:</b> (❤️ + 💬 + 💾 + ↗️) ÷ Alcance × 100<br>
+      Mede a proporção do público que agiu.<br><br>
+      <span style="color:#f87171;">0–2%</span> baixo ·
+      <span style="color:#fb923c;">2–4%</span> ok ·
+      <span style="color:#4ade80;">4–8%</span> bom ·
+      <span style="color:#a78bfa;">&gt;8%</span> excelente<br>
+      <span style="color:#334155;font-size:7px;">Referência para nicho jurídico</span>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="rstack">
+
+    <!-- REELS -->
+    <div class="sec" style="border-color:#2d1b3d;">
+      <div class="sec-hdr">
+        <span style="font-size:14px;">🎬</span>
+        <span class="sec-name" style="color:#f472b6;">REELS</span>
+        <span class="sec-count" id="reels-count">0 publicações · 30 dias</span>
+        <span class="sec-note">Eng. Rate = (❤️+💬+💾+↗️) ÷ alcance × 100</span>
+      </div>
+      <div class="mchips c8">
+        <div class="mc"><span class="mc-icon">📡</span><div class="mc-lbl">Alcance Méd.</div><div class="mc-val" id="r-reach">—</div><div class="mc-sub" id="r-reach-note"></div></div>
+        <div class="mc"><span class="mc-icon">↗️</span><div class="mc-lbl">Compartilh. Méd.</div><div class="mc-val" id="r-shares">—</div><div class="mc-sub nu">encaminham.</div></div>
+        <div class="mc"><span class="mc-icon">▶️</span><div class="mc-lbl">Views Méd.</div><div class="mc-val" id="r-views">—</div><div class="mc-sub good">plays únicos</div></div>
+        <div class="mc"><span class="mc-icon">⏱</span><div class="mc-lbl">Retenção Méd.</div><div class="mc-val" id="r-ret">—</div><div class="mc-sub warn" id="r-ret-note">requer insights</div></div>
+        <div class="mc highlight"><span class="mc-icon">📈</span><div class="mc-lbl">Eng. Rate Méd.</div><div class="mc-val" id="r-eng">—</div><div class="mc-sub" id="r-eng-note"></div></div>
+        <div class="mc"><span class="mc-icon">❤️</span><div class="mc-lbl">Curtidas Méd.</div><div class="mc-val" id="r-likes">—</div><div class="mc-sub" id="r-likes-note"></div></div>
+        <div class="mc"><span class="mc-icon">💬</span><div class="mc-lbl">Comentários Méd.</div><div class="mc-val" id="r-comm">—</div><div class="mc-sub nu">por reel</div></div>
+        <div class="mc"><span class="mc-icon">💾</span><div class="mc-lbl">Salvamentos Méd.</div><div class="mc-val" id="r-saves">—</div><div class="mc-sub good" id="r-saves-note"></div></div>
+      </div>
+      <div class="ptitle" style="margin-bottom:6px;">
+        <div class="pdot" style="background:#ec4899;"></div>
+        TOP 5 REELS por Views &nbsp;·&nbsp; clique para ver no Instagram
+      </div>
+      <div class="t5" id="reels-t5"></div>
+    </div>
+
+    <!-- CARROSSÉIS -->
+    <div class="sec" style="border-color:#3d2a0a;">
+      <div class="sec-hdr">
+        <span style="font-size:14px;">🖼️</span>
+        <span class="sec-name" style="color:#fbbf24;">CARROSSÉIS</span>
+        <span class="sec-count" id="carrs-count">0 publicações · 30 dias</span>
+        <span class="sec-note">Swipe-through = % que chegou ao último slide</span>
+      </div>
+      <div class="mchips c7">
+        <div class="mc"><span class="mc-icon">📡</span><div class="mc-lbl">Alcance Méd.</div><div class="mc-val" id="c-reach">—</div><div class="mc-sub" id="c-reach-note"></div></div>
+        <div class="mc"><span class="mc-icon">↗️</span><div class="mc-lbl">Compartilh. Méd.</div><div class="mc-val" id="c-shares">—</div><div class="mc-sub nu">encaminham.</div></div>
+        <div class="mc"><span class="mc-icon">👆</span><div class="mc-lbl">Swipe-through</div><div class="mc-val" id="c-swipe">—</div><div class="mc-sub warn" id="c-swipe-note">requer insights</div></div>
+        <div class="mc highlight-gold"><span class="mc-icon">📈</span><div class="mc-lbl">Eng. Rate Méd.</div><div class="mc-val" id="c-eng">—</div><div class="mc-sub" id="c-eng-note"></div></div>
+        <div class="mc"><span class="mc-icon">❤️</span><div class="mc-lbl">Curtidas Méd.</div><div class="mc-val" id="c-likes">—</div><div class="mc-sub" id="c-likes-note"></div></div>
+        <div class="mc"><span class="mc-icon">💬</span><div class="mc-lbl">Comentários Méd.</div><div class="mc-val" id="c-comm">—</div><div class="mc-sub nu">por post</div></div>
+        <div class="mc"><span class="mc-icon">💾</span><div class="mc-lbl">Salvamentos Méd.</div><div class="mc-val" id="c-saves">—</div><div class="mc-sub good" id="c-saves-note">⭐ sinal forte</div></div>
+      </div>
+      <div class="ptitle" style="margin-bottom:6px;">
+        <div class="pdot" style="background:#f59e0b;"></div>
+        TOP 5 CARROSSÉIS por Views &nbsp;·&nbsp; clique para ver no Instagram
+      </div>
+      <div class="t5" id="carrs-t5"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">Dashboard @recorrenciadehonorarios · Dados via Meta Graph API · Atualizado diariamente às 08:00 BRT</div>
+
+<script>
+// ─── UTILITÁRIOS ─────────────────────────────────────────────────────────
+function fmtNum(n) {
+  if (n == null || n === '' || n === 0) return '—';
+  const v = parseFloat(n);
+  if (isNaN(v)) return '—';
+  if (v >= 1000) return (v / 1000).toFixed(1).replace('.0','') + 'k';
+  return v.toLocaleString('pt-BR');
+}
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function fmtDate() {
+  return new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+// ─── SPARKLINE DE SEGUIDORES ─────────────────────────────────────────────
+function drawSparkline(history) {
+  const svg = document.getElementById('spark');
+  if (!history || history.length < 2) {
+    svg.innerHTML = '<text x="82" y="72" font-size="10" fill="#334155" text-anchor="middle">Histórico insuficiente</text>';
+    return;
+  }
+  const W=165, H=138, PX=24, PY=6;
+  const vals  = history.map(h => h.count);
+  const dates = history.map(h => h.date);
+  const mn    = Math.min(...vals) - 5;
+  const mx    = Math.max(...vals) + 5;
+  const xS    = (W - PX * 1.2) / (vals.length - 1);
+  const yS    = (H - PY * 2) / (mx - mn);
+  const pts   = vals.map((v,i) => [PX + i * xS, H - PY - (v - mn) * yS]);
+
+  let html = '';
+  [mn, Math.round((mn+mx)/2), mx].forEach(v => {
+    const y = H - PY - (v - mn) * yS;
+    html += `<line x1="${PX}" y1="${y}" x2="${W}" y2="${y}" stroke="#1a2035" stroke-width="1"/>`;
+    html += `<text x="${PX-3}" y="${y+3}" font-size="7.5" fill="#334155" text-anchor="end">${Math.round(v)}</text>`;
+  });
+  [[0,dates[0]],[Math.floor(vals.length/2),dates[Math.floor(vals.length/2)]],[vals.length-1,dates[dates.length-1]]].forEach(([i,d]) => {
+    const x = PX + i * xS;
+    const label = d ? d.slice(5).replace('-','/') : '';
+    html += `<text x="${x}" y="${H+13}" font-size="7.5" fill="#334155" text-anchor="middle">${label}</text>`;
+  });
+  const ap = `M${pts[0][0]},${H-PY} ` + pts.map(p=>`L${p[0]},${p[1]}`).join(' ') + ` L${pts[pts.length-1][0]},${H-PY} Z`;
+  const lp = `M${pts[0][0]},${pts[0][1]} ` + pts.slice(1).map(p=>`L${p[0]},${p[1]}`).join(' ');
+  html += `<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#818cf8" stop-opacity=".5"/>
+    <stop offset="100%" stop-color="#818cf8" stop-opacity=".02"/>
+  </linearGradient></defs>`;
+  html += `<path d="${ap}" fill="url(#ag)"/>`;
+  html += `<path d="${lp}" fill="none" stroke="#818cf8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const lx = pts[pts.length-1][0], ly = pts[pts.length-1][1];
+  html += `<circle cx="${lx}" cy="${ly}" r="3.5" fill="#818cf8" stroke="#07090f" stroke-width="2"/>`;
+  html += `<text x="${lx}" y="${ly-11}" font-size="14" fill="#a5b4fc" font-weight="800" text-anchor="middle">${vals[vals.length-1]}</text>`;
+  svg.innerHTML = html;
+}
+
+// ─── TOP 5 COM IMAGEM REAL ───────────────────────────────────────────────
+const GRAD = ['linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)',
+              'linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)',
+              'linear-gradient(135deg,#fa709a,#fee140)'];
+
+function buildTop5(items, containerId, isReel) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  if (!items || items.length === 0) {
+    c.innerHTML = '<div style="color:#475569;font-size:10px;padding:8px;">Nenhum dado disponível.</div>';
+    return;
+  }
+  items.forEach((item, idx) => {
+    const thumb     = item.thumb || '';
+    const views     = fmtNum(item.views);
+    const engRate   = item.eng_rate ? item.eng_rate + '%' : '—';
+    const likes     = item.like_count || 0;
+    const comments  = item.comments_count || 0;
+    const saves     = item.saved || 0;
+    const shares    = item.shares || 0;
+    const permalink = item.permalink || '#';
+    const type      = isReel ? 'REEL' : 'CARROSSEL';
+    const kws       = (item.keywords || []).slice(0, 3);
+    const grad      = GRAD[idx % GRAD.length];
+    const thumbStyle = thumb ? `background:#111;` : `background:${grad};`;
+    const imgTag = thumb
+      ? `<img src="${thumb}" alt="post ${idx+1}" loading="lazy" onerror="this.style.display='none'">`
+      : `<span class="thumb-fallback">📷</span>`;
+    const el = document.createElement('div');
+    el.className = 'ti';
+    el.innerHTML = `
+      <div class="thumb" style="${thumbStyle}">
+        ${imgTag}
+        <div class="t-rank">#${idx+1}</div>
+        <div class="t-type">${type}</div>
+        <div class="t-bar">
+          <div class="t-main">
+            <span>▶ ${views}</span>
+            <span style="color:#4ade80;">📈 ${engRate}</span>
+          </div>
+        </div>
+        <a class="permalink" href="${permalink}" target="_blank" rel="noopener">Ver no IG ↗</a>
+      </div>
+      <div class="kw-row">
+        ${kws.map(k => `<span class="kw">${k}</span>`).join('')}
+      </div>
+      <div class="tst">
+        <span>❤️ <b>${likes}</b></span>
+        <span>💬 <b>${comments}</b></span>
+        <span>💾 <b>${saves}</b></span>
+        <span>↗️ <b>${shares}</b></span>
+      </div>`;
+    c.appendChild(el);
+  });
+}
+
+// ─── POPULAR DASHBOARD ───────────────────────────────────────────────────
+function fmtEngNote(rate) {
+  if (!rate || rate === 0) return '';
+  if (rate >= 8)  return '⭐ excelente';
+  if (rate >= 4)  return '✓ acima benchmark';
+  if (rate >= 2)  return 'ok · benchmark 4%+';
+  return '⚠ abaixo benchmark';
+}
+function fmtEngClass(rate) {
+  if (!rate) return 'nu';
+  if (rate >= 4) return 'good';
+  if (rate >= 2) return '';
+  return 'bad';
+}
+
+async function loadDashboard() {
+  const overlay    = document.getElementById('overlay');
+  const overlayMsg = document.getElementById('overlay-msg');
+  try {
+    let d;
+    if (window.__PREVIEW_ONLY__ && window.__EMBEDDED_DATA__) {
+      d = window.__EMBEDDED_DATA__;                 // preview: usa dados embutidos, sem rede
+    } else {
+      try {
+        const res = await fetch('./data.json?t=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        d = await res.json();
+      } catch (e) {
+        // fallback: dados embutidos (permite abrir o arquivo direto, sem servidor)
+        if (window.__EMBEDDED_DATA__) d = window.__EMBEDDED_DATA__;
+        else throw e;
+      }
+    }
+
+    // Normaliza arrays (proteção: serializadores podem desempacotar arrays de 1 item)
+    const asArr = x => Array.isArray(x) ? x : (x == null ? [] : [x]);
+    d.follower_history = asArr(d.follower_history);
+    d.top5_reels = asArr(d.top5_reels);
+    d.top5_carousels = asArr(d.top5_carousels);
+    [...d.top5_reels, ...d.top5_carousels].forEach(it => { if (it) it.keywords = asArr(it.keywords); });
+
+    // HEADER
+    const wrap = document.getElementById('profile-pic-wrap');
+    if (d.profile && d.profile.profile_picture_url) {
+      wrap.innerHTML = `<img class="profile-pic" src="${d.profile.profile_picture_url}" alt="perfil" onerror="this.parentElement.textContent='📱'">`;
+    }
+    if (d.profile && d.profile.username) {
+      set('hdr-username', '@' + d.profile.username);
+    }
+    set('hdr-updated', 'Atualizado ' + (d.updated_at || ''));
+    set('hdr-date', '📅 ' + fmtDate());
+    set('hdr-posts', '📊 ' + (d.account_stats?.total_posts_30d || 0) + ' publicações nos últimos 30 dias');
+
+    // KPI STRIP
+    const ac = d.account_stats || {};
+    set('kpi-followers', fmtNum(ac.followers));
+    set('kpi-followers-sub', '▲ +? seguidores este mês');
+    set('kpi-avg-likes',       fmtNum(ac.avg_likes));
+    set('kpi-avg-comments',    fmtNum(ac.avg_comments));
+    set('kpi-avg-saves',  ac.avg_saves ? fmtNum(ac.avg_saves) : '—');
+    set('kpi-avg-shares', fmtNum(ac.avg_shares));
+    set('kpi-avg-reach',  ac.avg_reach ? fmtNum(ac.avg_reach) : '—');
+    if (ac.avg_saves) set('kpi-saves-note', 'média por post');
+    if (ac.avg_reach) set('kpi-reach-note', 'média por post');
+
+    // REELS METRICS
+    const r = d.reels_stats || {};
+    set('reels-count', (r.count || 0) + ' publicações · 30 dias');
+    set('r-reach',  r.avg_reach ? fmtNum(r.avg_reach) : '—');
+    set('r-shares', fmtNum(r.avg_shares));
+    set('r-views',  fmtNum(r.avg_views));
+    set('r-ret',    '—');
+    set('r-eng',    r.avg_eng_rate ? r.avg_eng_rate + '%' : '—');
+    set('r-likes',  fmtNum(r.avg_likes));
+    set('r-comm',   fmtNum(r.avg_comments));
+    set('r-saves',  r.avg_saves ? fmtNum(r.avg_saves) : '—');
+    if (r.avg_reach)  document.getElementById('r-reach-note').textContent = 'contas únicas';
+    if (r.avg_eng_rate) {
+      const noteEl = document.getElementById('r-eng-note');
+      noteEl.textContent  = fmtEngNote(r.avg_eng_rate);
+      noteEl.className    = 'mc-sub ' + fmtEngClass(r.avg_eng_rate);
+    }
+    if (r.avg_likes) {
+      const pct = r.avg_reach ? Math.round(r.avg_likes / r.avg_reach * 100) + '% do alcance' : 'por reel';
+      set('r-likes-note', pct);
+    }
+    // Frequência Reels (views ÷ alcance)
+    if (r.avg_reach && r.avg_views) {
+      const freq = (r.avg_views / r.avg_reach).toFixed(1) + '×';
+      set('freq-reels', freq);
+      const pct = Math.min((r.avg_views / r.avg_reach) / 3 * 100, 100);
+      document.getElementById('freq-reels-bar').style.width = pct + '%';
+    }
+
+    // CARROSSEIS METRICS
+    const ca = d.carousels_stats || {};
+    set('carrs-count', (ca.count || 0) + ' publicações · 30 dias');
+    set('c-reach', ca.avg_reach ? fmtNum(ca.avg_reach) : '—');
+    set('c-shares', fmtNum(ca.avg_shares));
+    set('c-swipe', '—');
+    set('c-eng',   ca.avg_eng_rate ? ca.avg_eng_rate + '%' : '—');
+    set('c-likes', fmtNum(ca.avg_likes));
+    set('c-comm',  fmtNum(ca.avg_comments));
+    set('c-saves', ca.avg_saves ? fmtNum(ca.avg_saves) : '—');
+    if (ca.avg_reach) document.getElementById('c-reach-note').textContent = 'contas únicas';
+    if (ca.avg_eng_rate) {
+      const noteEl = document.getElementById('c-eng-note');
+      noteEl.textContent = fmtEngNote(ca.avg_eng_rate);
+      noteEl.className   = 'mc-sub ' + fmtEngClass(ca.avg_eng_rate);
+    }
+    // Frequência Carrosséis (views ÷ alcance)
+    if (ca.avg_reach && ca.avg_views) {
+      const freq = (ca.avg_views / ca.avg_reach).toFixed(1) + '×';
+      set('freq-carrs', freq);
+      const pct = Math.min((ca.avg_views / ca.avg_reach) / 3 * 100, 100);
+      document.getElementById('freq-carrs-bar').style.width = pct + '%';
+    }
+
+    // MIX DE CONTEÚDO
+    const total = (r.count||0) + (ca.count||0) + (d.posts_count||0);
+    const rPct  = total ? Math.round(r.count/total*100) : 0;
+    const cPct  = total ? Math.round(ca.count/total*100) : 0;
+    const pPct  = 100 - rPct - cPct;
+    set('fmt-reels', `Reels — ${rPct}% (${r.count||0})`);
+    set('fmt-carrs', `Carrosséis — ${cPct}% (${ca.count||0})`);
+    set('fmt-posts', `Posts — ${pPct}% (${d.posts_count||0})`);
+    const fmtBars = document.querySelectorAll('#fmt-mix .fmt-bar');
+    if (fmtBars[0]) fmtBars[0].style.width = Math.max(rPct * 0.8, 10) + 'px';
+    if (fmtBars[1]) fmtBars[1].style.width = Math.max(cPct * 0.8, 10) + 'px';
+    if (fmtBars[2]) fmtBars[2].style.width = Math.max(pPct * 0.8, 10) + 'px';
+
+    // SPARKLINE
+    drawSparkline(d.follower_history || []);
+
+    // TOP 5
+    buildTop5(d.top5_reels,     'reels-t5', true);
+    buildTop5(d.top5_carousels, 'carrs-t5', false);
+
+    // Seguidores com histórico
+    if (d.follower_history && d.follower_history.length >= 2) {
+      const h  = d.follower_history;
+      const diff = h[h.length-1].count - h[0].count;
+      const pct  = h[0].count ? ((diff / h[0].count) * 100).toFixed(1) : 0;
+      set('kpi-followers-sub', `${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff)} nos últimos 30 dias (${pct >= 0 ? '+' : ''}${pct}%)`);
+    }
+
+    overlay.classList.add('hidden');
+
+  } catch (err) {
+    overlayMsg.textContent = 'Erro ao carregar dados: ' + err.message;
+    document.querySelector('.spinner').style.display = 'none';
+    console.error(err);
+  }
+}
+
+set('hdr-date', '📅 ' + fmtDate());
+loadDashboard();
+setInterval(loadDashboard, 30 * 60 * 1000);
+</script>
+</body>
+</html>

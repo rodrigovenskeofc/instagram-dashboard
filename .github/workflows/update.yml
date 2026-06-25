@@ -1,0 +1,46 @@
+name: Atualizar Dashboard Instagram
+
+on:
+  schedule:
+    - cron: '0 11 * * *'      # 11:00 UTC = 08:00 BRT (horário de Brasília)
+  workflow_dispatch:           # permite rodar manualmente ("Run workflow")
+
+permissions:
+  contents: write              # para commitar data.json / follower_history.json
+
+concurrency:
+  group: dashboard-update
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Gerar data.json
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ID:  ${{ secrets.INSTAGRAM_BUSINESS_ID }}
+          GH_PAT:  ${{ secrets.GH_PAT }}      # opcional: renova o token sozinho
+          GH_REPO: ${{ github.repository }}
+        run: python build.py
+
+      - name: Commit e push dos dados
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json follower_history.json historico_metricas.csv
+          if git diff --staged --quiet; then
+            echo "Sem mudanças nos dados."
+          else
+            git commit -m "chore: dados do dashboard $(date -u +%F) [skip ci]"
+            git push
+          fi

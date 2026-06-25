@@ -1,0 +1,20 @@
+# Segredos e ambiente
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Temporários
+*.tmp
+.DS_Store
+
+# Helpers locais (preview / seed) — só para uso local
+_*.ps1
+preview_local.html
+
+# Projeto Flask antigo (substituído pela versão estática)
+app.py
+render.yaml
+README_DESENVOLVEDOR.md
+templates/
