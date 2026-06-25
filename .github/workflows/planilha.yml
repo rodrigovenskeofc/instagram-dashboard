@@ -1,0 +1,29 @@
+name: Atualizar Planilha Trafego
+
+on:
+  schedule:
+    - cron: '30 10 * * *'      # 10:30 UTC = 07:30 BRT (horário de Brasília)
+  workflow_dispatch:           # permite rodar manualmente ("Run workflow")
+
+concurrency:
+  group: planilha-update
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install openpyxl google-api-python-client google-auth
+
+      - name: Atualizar planilha do Drive (Reels de hoje-3)
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          GDRIVE_SA:              ${{ secrets.GDRIVE_SA }}
+        run: python atualizar_planilha.py --daily
