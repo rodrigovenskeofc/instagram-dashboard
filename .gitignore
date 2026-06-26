@@ -19,3 +19,12 @@ app.py
 render.yaml
 README_DESENVOLVEDOR.md
 templates/
+
+# segredos e dados da automacao da planilha
+ig_state.json
+gdrive_sa.json
+.env
+*.xlsx
+capturar_log.txt
+log_diario.txt
+reels_coletados.json

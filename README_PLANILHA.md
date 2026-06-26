@@ -29,24 +29,31 @@ Todo dia o robô registra os Reels postados em **HOJE − 3 dias**, na próxima 
 
 ### Colunas preenchidas
 A (Nr, automático) · C (Seguidores) · D (Dif Seguidores) · E (Atualização = dia da coleta) ·
-F (Data do Reel) · G (Dia da semana) · H (Link) · I (Head/legenda) · J (Views) · K (Likes) ·
-L (Coments) · M (Shares) · N (Saved) · O (Alcance).
+F (Data do Reel) · G (Dia da semana) · H (Link) · I (Head/legenda) · **J (Views)** · K (Likes) ·
+L (Coments) · M (Shares) · N (Saved) · O (Alcance) · **P–S (split de Views por público)**.
 
 - **B (Distribuição):** manual — o robô não mexe.
-- **P / Q (Views/Alcance Seguidores e Não-Seguidores):** ficam **em branco** de propósito.
-  A API do Instagram não entrega mais esse dado real (só estimativa, que não usamos).
-  Veja abaixo como religar se um dia voltar a valer a pena.
+- **J (Views):** vem das **"Visualizações" reais da tela de insights** (o que você vê no app),
+  lidas via navegador logado. ⚠️ A métrica `views` da API do Instagram NÃO corresponde a esse
+  número (retorna algo perto do alcance), por isso não a usamos para Views.
+- **P, Q, R, S (split de Views):** lidos da mesma tela de insights:
+  - **P = Views de Seguidores (%)** · **Q = Views de Seguidores (nº)**
+  - **R = Views de Não-Seguidores (%)** · **S = Views de Não-Seguidores (nº)**
+  - Q + S = J (Views). Os % são formatados como porcentagem; os nº são absolutos.
+- **K, L, M, N, O (curtidas, coments, shares, saved, alcance):** vêm da API (conferidos: batem
+  com o app) — mais robustos, não dependem do navegador.
+
+> Renomeie os cabeçalhos da **linha 3** das colunas P–S para: "Views Seguidores %",
+> "Views Seguidores nº", "Views Não-Seg %", "Views Não-Seg nº".
 
 ---
 
 ## Como mexer
 
 ### ▶️ Rodar na hora (sem esperar as 07:30)
-- **Pelo GitHub (mais fácil):** abra
-  **https://github.com/rodrigovenskeofc/instagram-dashboard/actions** → no menu esquerdo
-  **"Atualizar Planilha Trafego"** → **"Run workflow"**. Em ~1 min atualiza a planilha.
-- **Pelo VPS:** `ssh -p 22022 root@143.95.213.127` e rode
-  `cd /root/automacoes/planilha && python3 atualizar_planilha.py --daily`
+No VPS: `ssh -p 22022 root@143.95.213.127` e rode
+`cd /root/automacoes/planilha && python3 atualizar_planilha.py --daily`
+- Para re-ler o split/Views de TODAS as linhas já preenchidas: `... --split-existing`
 
 ### ⏸️ Pausar / religar (o agendamento real é o do VPS)
 - No VPS: `crontab -e` e comente (coloque `#` na frente) a linha que tem
@@ -75,11 +82,19 @@ L (Coments) · M (Shares) · N (Saved) · O (Alcance).
 ## Bastidores (pra referência)
 
 - **Onde roda de verdade:** no **VPS** (`/root/automacoes/planilha/`), via cron, todo dia 07:30.
-  Lá ficam: `atualizar_planilha.py`, `.env` (token) e `gdrive_sa.json` (chave Google), com
-  permissão `600`. Log em `/root/automacoes/planilha/log.txt`. O token se renova sozinho a cada
-  execução (regravado no `.env` do VPS).
-- **Reserva manual (GitHub Actions):** mesmo script no repo, lê os secrets
-  `INSTAGRAM_ACCESS_TOKEN` e `GDRIVE_SA`. Útil pra "Run workflow" manual se o VPS estiver fora.
+  Arquivos lá: `atualizar_planilha.py`, `coletar_views_split.py`, `.env` (token),
+  `gdrive_sa.json` (chave Google) e `ig_state.json` (sessão logada do Instagram) — os 3 segredos
+  com permissão `600`. Usa **Playwright (chromium headless)** pra ler a tela de insights.
+  Log em `log.txt`. O token do IG se renova sozinho a cada execução.
+- **Sessão do Instagram (`ig_state.json`):** capturada 1x localmente com
+  `CAPTURAR_LOGIN_INSTAGRAM.bat` (login feito por você). Se o IG deslogar a sessão (pode acontecer
+  por ser outro IP), rode o .bat de novo e copie o `ig_state.json` novo pro VPS:
+  `scp -P 22022 ig_state.json root@143.95.213.127:/root/automacoes/planilha/`. Sinal de sessão
+  caída no log: `split=---` ou `sessao_deslogada`.
+- **GitHub Actions: DESATIVADO.** O workflow `planilha.yml` foi desligado porque os runners do
+  GitHub não têm sua sessão logada do IG — sem ela, as Views sairiam erradas (a API não bate com
+  o app) e o split ficaria vazio. O VPS é o único executor. (Reativar só faria sentido com uma
+  sessão do IG disponível lá, o que não é o caso.)
 - **Conta de serviço Google:** `planilha-writer@meta-map-500519-n1.iam.gserviceaccount.com`
   (tem escrita na planilha, que está como "qualquer um com link pode editar").
 - **Mantém o mesmo arquivo e link:** baixa a versão atual do Drive, preenche e regrava no
