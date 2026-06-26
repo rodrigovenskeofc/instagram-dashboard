@@ -27,26 +27,41 @@ def pk_de_shortcode(sc):
 def _num(s):
     return float(s.replace(".", "").replace(",", ".")) if "," in s else float(s)
 
+def _primeiro_num_apos(linhas, i):
+    for j in range(i + 1, min(i + 4, len(linhas))):
+        t = linhas[j].replace(".", "").replace(" ", "")
+        if t.isdigit():
+            return int(t)
+    return None
+
 def _parse(texto):
-    """Extrai seg%, nao% e visualizacoes do texto renderizado da pagina."""
+    """Extrai seg%, nao%, views TOTAL e views do FACEBOOK do texto da pagina.
+    Layout: 'Visualizações' (topo = total IG+FB) ... e mais abaixo, depois de
+    'Facebook', outra 'Visualizações' (= so Facebook)."""
     linhas = [l.strip() for l in texto.splitlines() if l.strip()]
-    seg = nao = views = None
+    seg = nao = views = fb_views = None
     for i, l in enumerate(linhas):
         prox = linhas[i + 1] if i + 1 < len(linhas) else ""
         if l.lower() == "seguidores" and "%" in prox:
             seg = _num(prox.replace("%", "").strip())
         elif l.lower() == "não seguidores" and "%" in prox:
             nao = _num(prox.replace("%", "").strip())
-    # Visualizacoes: primeiro numero puro apos a(s) palavra(s) "Visualizações"
+    # total = primeira "Visualizações" com numero
     for i, l in enumerate(linhas):
         if l.lower() == "visualizações":
-            for j in range(i + 1, min(i + 4, len(linhas))):
-                t = linhas[j].replace(".", "").replace(" ", "")
-                if t.isdigit():
-                    views = int(t); break
+            views = _primeiro_num_apos(linhas, i)
             if views is not None:
                 break
-    return seg, nao, views
+    # facebook = "Visualizações" que aparece DEPOIS da secao "Facebook"
+    fb_i = next((i for i, l in enumerate(linhas) if l.lower() == "facebook"), None)
+    if fb_i is not None:
+        for i in range(fb_i + 1, len(linhas)):
+            if linhas[i].lower() == "visualizações":
+                fb_views = _primeiro_num_apos(linhas, i)
+                break
+    if fb_views is None:
+        fb_views = 0
+    return seg, nao, views, fb_views
 
 def split_de_reels(shortcodes, headless=True):
     out = {}
@@ -59,7 +74,7 @@ def split_de_reels(shortcodes, headless=True):
         for sc in shortcodes:
             pk = pk_de_shortcode(sc)
             rec = {"shortcode": sc, "pk": pk, "seg_pct": None, "nao_pct": None,
-                   "views": None, "erro": None}
+                   "views": None, "fb_views": None, "ig_views": None, "erro": None}
             try:
                 page.goto(f"https://www.instagram.com/insights/media/{pk}/", timeout=45000)
                 seg = nao = None
@@ -68,9 +83,11 @@ def split_de_reels(shortcodes, headless=True):
                     txt = page.inner_text("body")
                     if "accounts/login" in page.url:
                         rec["erro"] = "sessao_deslogada"; break
-                    seg, nao, views = _parse(txt)
+                    seg, nao, views, fb = _parse(txt)
                     if seg is not None and nao is not None:
-                        rec.update(seg_pct=seg, nao_pct=nao, views=views); break
+                        ig = (views - fb) if views is not None else None
+                        rec.update(seg_pct=seg, nao_pct=nao, views=views,
+                                   fb_views=fb, ig_views=ig); break
                 if rec["seg_pct"] is None and not rec["erro"]:
                     rec["erro"] = "nao_achou_split"
             except Exception as e:
@@ -87,8 +104,5 @@ if __name__ == "__main__":
         if r["erro"]:
             print(f"{sc}: ERRO -> {r['erro']}")
         else:
-            vs = r["views"]; seg = r["seg_pct"]; nao = r["nao_pct"]
-            abs_seg = round(vs * seg / 100) if vs and seg is not None else None
-            abs_nao = round(vs * nao / 100) if vs and nao is not None else None
-            print(f"{sc}: views={vs} | Seguidores {seg}% (~{abs_seg}) | "
-                  f"Nao-seguidores {nao}% (~{abs_nao})")
+            print(f"{sc}: total={r['views']} | facebook={r['fb_views']} | "
+                  f"INSTAGRAM={r['ig_views']} | Seg {r['seg_pct']}% / Nao {r['nao_pct']}%")

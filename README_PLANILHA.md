@@ -30,19 +30,21 @@ Todo dia o robô registra os Reels postados em **HOJE − 3 dias**, na próxima 
 ### Colunas preenchidas
 A (Nr, automático) · C (Seguidores) · D (Dif Seguidores) · E (Atualização = dia da coleta) ·
 F (Data do Reel) · G (Dia da semana) · H (Link) · I (Head/legenda) · **J (Views)** · K (Likes) ·
-L (Coments) · M (Shares) · N (Saved) · O (Alcance) · **P, Q (split de Views por público, %)**.
+L (Coments) · M (Shares) · N (Saved) · O (Alcance) · **P, Q (split de Views, %)** · **R (Views só Instagram)**.
 
 - **B (Distribuição):** manual — o robô não mexe.
-- **J (Views):** vem das **"Visualizações" reais da tela de insights** (o que você vê no app),
-  lidas via navegador logado. ⚠️ A métrica `views` da API do Instagram NÃO corresponde a esse
-  número (retorna algo perto do alcance), por isso não a usamos para Views.
-- **P, Q (split de Views, só percentual):** lidos da mesma tela de insights:
+- **J (Views — TOTAL):** "Visualizações" do topo da tela de insights = **Instagram + Facebook**
+  (cross-post). Lida via navegador logado.
+- **R (Views só Instagram):** **J menos as "Visualizações" do Facebook** (lidas da seção
+  Facebook da mesma tela). Equivale ao `views` da API do Instagram. Use esta coluna quando quiser
+  ignorar o Facebook.
+- **P, Q (split de Views por público, só %):** sobre o TOTAL (J):
   - **P = Views de Seguidores (%)** · **Q = Views de Não-Seguidores (%)** (P + Q = 100%).
-  - Formatados como porcentagem. (Não gravamos número absoluto — só %.)
 - **K, L, M, N, O (curtidas, coments, shares, saved, alcance):** vêm da API (conferidos: batem
   com o app) — mais robustos, não dependem do navegador.
 
-> Renomeie os cabeçalhos da **linha 3**: P = "Views Seguidores %", Q = "Views Não-Seg %".
+> Renomeie os cabeçalhos da **linha 3**: J = "Views (total)", P = "Views Seguidores %",
+> Q = "Views Não-Seg %", R = "Views só Instagram".
 
 ---
 
