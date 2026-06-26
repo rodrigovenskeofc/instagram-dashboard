@@ -50,9 +50,7 @@ COL = dict(nr=1, distrib=2, seguidores=3, dif=4, atualizacao=5, data=6, dia=7,
            link=8, head=9, views=10, likes=11, coments=12, shares=13, saved=14,
            alcance=15,
            vseg_pct=16,   # P - Views Seguidores (%)
-           vseg_num=17,   # Q - Views Seguidores (no)
-           vnao_pct=18,   # R - Views Nao-Seguidores (%)
-           vnao_num=19)   # S - Views Nao-Seguidores (no)
+           vnao_pct=17)   # Q - Views Nao-Seguidores (%)
 
 # ---------------- credenciais (.env local OU variaveis de ambiente na nuvem) ----------------
 ENV_FILE = PASTA / ".env"
@@ -272,16 +270,16 @@ def preencher_linha(ws, row, reel, segs, hoje, split=None):
     _set_split(ws, row, split, reel.get("views"))
 
 def _set_split(ws, row, split, views_fallback=0):
-    """Escreve P..S (split de Views por publico) como fracao (% formatado) + absoluto."""
+    """Escreve o split de Views por publico SO em percentual: P=seg%, Q=nao%."""
     if not (split and split.get("seg_pct") is not None):
         return False
-    vtot = split.get("views") or views_fallback or 0
     sp = split["seg_pct"]
     npc = split["nao_pct"] if split.get("nao_pct") is not None else (100 - sp)
     cP = ws.cell(row=row, column=COL["vseg_pct"]); cP.value = round(sp/100, 4); cP.number_format = "0.0%"
-    ws.cell(row=row, column=COL["vseg_num"]).value = round(vtot * sp / 100)
-    cR = ws.cell(row=row, column=COL["vnao_pct"]); cR.value = round(npc/100, 4); cR.number_format = "0.0%"
-    ws.cell(row=row, column=COL["vnao_num"]).value = round(vtot * npc / 100)
+    cQ = ws.cell(row=row, column=COL["vnao_pct"]); cQ.value = round(npc/100, 4); cQ.number_format = "0.0%"
+    # remove eventuais numeros absolutos antigos das colunas R(18) e S(19)
+    ws.cell(row=row, column=18).value = None
+    ws.cell(row=row, column=19).value = None
     return True
 
 def proxima_linha_vazia(ws, start=60):

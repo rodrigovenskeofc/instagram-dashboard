@@ -30,21 +30,19 @@ Todo dia o robô registra os Reels postados em **HOJE − 3 dias**, na próxima 
 ### Colunas preenchidas
 A (Nr, automático) · C (Seguidores) · D (Dif Seguidores) · E (Atualização = dia da coleta) ·
 F (Data do Reel) · G (Dia da semana) · H (Link) · I (Head/legenda) · **J (Views)** · K (Likes) ·
-L (Coments) · M (Shares) · N (Saved) · O (Alcance) · **P–S (split de Views por público)**.
+L (Coments) · M (Shares) · N (Saved) · O (Alcance) · **P, Q (split de Views por público, %)**.
 
 - **B (Distribuição):** manual — o robô não mexe.
 - **J (Views):** vem das **"Visualizações" reais da tela de insights** (o que você vê no app),
   lidas via navegador logado. ⚠️ A métrica `views` da API do Instagram NÃO corresponde a esse
   número (retorna algo perto do alcance), por isso não a usamos para Views.
-- **P, Q, R, S (split de Views):** lidos da mesma tela de insights:
-  - **P = Views de Seguidores (%)** · **Q = Views de Seguidores (nº)**
-  - **R = Views de Não-Seguidores (%)** · **S = Views de Não-Seguidores (nº)**
-  - Q + S = J (Views). Os % são formatados como porcentagem; os nº são absolutos.
+- **P, Q (split de Views, só percentual):** lidos da mesma tela de insights:
+  - **P = Views de Seguidores (%)** · **Q = Views de Não-Seguidores (%)** (P + Q = 100%).
+  - Formatados como porcentagem. (Não gravamos número absoluto — só %.)
 - **K, L, M, N, O (curtidas, coments, shares, saved, alcance):** vêm da API (conferidos: batem
   com o app) — mais robustos, não dependem do navegador.
 
-> Renomeie os cabeçalhos da **linha 3** das colunas P–S para: "Views Seguidores %",
-> "Views Seguidores nº", "Views Não-Seg %", "Views Não-Seg nº".
+> Renomeie os cabeçalhos da **linha 3**: P = "Views Seguidores %", Q = "Views Não-Seg %".
 
 ---
 
