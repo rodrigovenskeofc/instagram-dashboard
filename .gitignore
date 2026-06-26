@@ -1,5 +1,6 @@
 # Segredos e ambiente
 .env
+token.txt
 
 # Python
 __pycache__/

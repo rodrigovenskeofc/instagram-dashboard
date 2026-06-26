@@ -33,14 +33,26 @@ except Exception:  # fallback se tzdata ausente
     BRT = timezone(timedelta(hours=-3))
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
-TOKEN       = os.getenv("INSTAGRAM_ACCESS_TOKEN", "").strip()
-API_VERSION = os.getenv("META_API_VERSION", "").strip()       # vazio = última versão
-BASE_URL    = "https://graph.instagram.com" + (f"/{API_VERSION}" if API_VERSION else "")
-
 SCRIPT_DIR   = Path(__file__).resolve().parent
 DATA_FILE    = SCRIPT_DIR / "data.json"
 HISTORY_FILE = SCRIPT_DIR / "follower_history.json"
 CSV_FILE     = SCRIPT_DIR / "historico_metricas.csv"   # 1 linha por dia, p/ Excel/Sheets
+TOKEN_FILE   = SCRIPT_DIR / "token.txt"                # persistência local do token (VPS)
+
+
+def _load_token() -> str:
+    """Token vem do env (GitHub Actions) ou de token.txt (VPS)."""
+    t = os.getenv("INSTAGRAM_ACCESS_TOKEN", "").strip()
+    if t:
+        return t
+    if TOKEN_FILE.exists():
+        return TOKEN_FILE.read_text(encoding="utf-8").strip()
+    return ""
+
+
+TOKEN       = _load_token()
+API_VERSION = os.getenv("META_API_VERSION", "").strip()       # vazio = última versão
+BASE_URL    = "https://graph.instagram.com" + (f"/{API_VERSION}" if API_VERSION else "")
 
 DAYS         = 30
 HISTORY_KEEP = 35
@@ -276,6 +288,13 @@ def refresh_token():
         print("  Token já está fresco (nada a fazer).")
         return
     print(f"  Token renovado (expira em ~{resp.get('expires_in', 0)//86400} dias).")
+    # VPS: persiste no arquivo local. GitHub Actions: persiste no secret (via GH_PAT).
+    if not os.getenv("INSTAGRAM_ACCESS_TOKEN"):
+        try:
+            TOKEN_FILE.write_text(new_token, encoding="utf-8")
+            print("  Token salvo em token.txt.")
+        except Exception as e:
+            print(f"  (aviso) falha ao salvar token.txt: {e}")
     update_github_secret("INSTAGRAM_ACCESS_TOKEN", new_token)
 
 
