@@ -3,13 +3,17 @@
 Atualiza sozinha, **todo dia às 07:30 (horário de Brasília)**, a planilha de tráfego
 no Google Drive com as métricas dos Reels de **@recorrenciadehonorarios**.
 
-Roda na **nuvem (GitHub Actions)** — **não depende do seu PC estar ligado**.
+**Quem agenda é o VPS** (servidor sempre ligado) — **não depende do seu PC**.
+O cron do GitHub Actions é "best-effort" e neste repositório não dispara, por isso o
+agendamento foi movido para o VPS. O GitHub continua como **reserva de disparo manual**.
 
 - **Planilha:** `4) MÉTRICAS REELS DISTRIBUIÇÃO DE CONTEÚDO.xlsx`
   → https://docs.google.com/spreadsheets/d/1OspNVc8Sd-JvE1NHXM-l3-NWayG7dKfx/edit
   (aba **`2026 Reels Org`**, dados a partir da linha 60)
 - **Script:** [`atualizar_planilha.py`](atualizar_planilha.py)
-- **Agendador:** [`.github/workflows/planilha.yml`](.github/workflows/planilha.yml)
+- **Agendador real:** cron no VPS `143.95.213.127` →
+  `/root/automacoes/planilha/` (cron `30 7 * * *`, fuso America/Sao_Paulo).
+- **Reserva manual:** [`.github/workflows/planilha.yml`](.github/workflows/planilha.yml) (só `workflow_dispatch`).
 
 ---
 
@@ -38,19 +42,21 @@ L (Coments) · M (Shares) · N (Saved) · O (Alcance).
 ## Como mexer
 
 ### ▶️ Rodar na hora (sem esperar as 07:30)
-1. Abra **https://github.com/rodrigovenskeofc/instagram-dashboard/actions**
-2. No menu esquerdo, clique em **"Atualizar Planilha Trafego"**.
-3. Botão **"Run workflow"** → **Run workflow**. Em ~1 min ele roda e atualiza a planilha.
+- **Pelo GitHub (mais fácil):** abra
+  **https://github.com/rodrigovenskeofc/instagram-dashboard/actions** → no menu esquerdo
+  **"Atualizar Planilha Trafego"** → **"Run workflow"**. Em ~1 min atualiza a planilha.
+- **Pelo VPS:** `ssh -p 22022 root@143.95.213.127` e rode
+  `cd /root/automacoes/planilha && python3 atualizar_planilha.py --daily`
 
-### ⏸️ Pausar (desligar)
-- Mesma tela do Actions → workflow **"Atualizar Planilha Trafego"** → botão **"•••"** (canto
-  superior direito) → **"Disable workflow"**. Para religar, **"Enable workflow"**.
+### ⏸️ Pausar / religar (o agendamento real é o do VPS)
+- No VPS: `crontab -e` e comente (coloque `#` na frente) a linha que tem
+  `atualizar_planilha.py`. Para religar, tire o `#`.
+- Ver o agendamento atual: `crontab -l`.
 
 ### 🕢 Mudar o horário
-- Edite [`.github/workflows/planilha.yml`](.github/workflows/planilha.yml), linha do `cron`.
-- O horário é em **UTC**. Brasília = UTC−3, então **some 3 horas**:
-  - 07:30 BRT = `30 10 * * *`  ·  08:00 BRT = `0 11 * * *`  ·  06:00 BRT = `0 9 * * *`
-- Formato: `minuto hora * * *`.
+- No VPS: `crontab -e`, na linha do `atualizar_planilha.py`, mude o início `30 7`
+  (= 07:30, horário de Brasília — o VPS já está nesse fuso). Formato: `minuto hora * * *`.
+  Ex.: `0 8 * * *` = 08:00; `45 6 * * *` = 06:45.
 
 ### 📅 Mudar a regra dos "3 dias"
 - Edite [`atualizar_planilha.py`](atualizar_planilha.py), a constante no topo:
@@ -68,20 +74,22 @@ L (Coments) · M (Shares) · N (Saved) · O (Alcance).
 
 ## Bastidores (pra referência)
 
-- **Onde roda:** GitHub Actions (servidores do GitHub), não no seu PC.
-- **Credenciais (secrets do repo, nunca no código):**
-  - `INSTAGRAM_ACCESS_TOKEN` — token do Instagram (renovado sozinho, todo dia, pelo job do dashboard).
-  - `GDRIVE_SA` — chave da conta de serviço Google `planilha-writer@meta-map-500519-n1.iam.gserviceaccount.com`,
-    que tem permissão de escrita na planilha (compartilhada como "qualquer um com link pode editar").
+- **Onde roda de verdade:** no **VPS** (`/root/automacoes/planilha/`), via cron, todo dia 07:30.
+  Lá ficam: `atualizar_planilha.py`, `.env` (token) e `gdrive_sa.json` (chave Google), com
+  permissão `600`. Log em `/root/automacoes/planilha/log.txt`. O token se renova sozinho a cada
+  execução (regravado no `.env` do VPS).
+- **Reserva manual (GitHub Actions):** mesmo script no repo, lê os secrets
+  `INSTAGRAM_ACCESS_TOKEN` e `GDRIVE_SA`. Útil pra "Run workflow" manual se o VPS estiver fora.
+- **Conta de serviço Google:** `planilha-writer@meta-map-500519-n1.iam.gserviceaccount.com`
+  (tem escrita na planilha, que está como "qualquer um com link pode editar").
 - **Mantém o mesmo arquivo e link:** baixa a versão atual do Drive, preenche e regrava no
-  mesmo `fileId` (via Drive API). Nunca cria cópia.
-- **Reserva local:** existe uma tarefa equivalente no Agendador do Windows
-  (`PlanilhaTrafegoInstagram`), mas está **desativada** para não competir com a nuvem.
-  Arquivos locais: `atualizar_planilha.py`, `run_diario.bat`, `.env`, `gdrive_sa.json`
-  na pasta `C:\Users\Rodrigo\Documents\INSTAGRAM (CLaude)`.
+  mesmo `fileId` (via Drive API). Nunca cria cópia. Deduplica por link (não repete Reel).
+- **Reserva local (Windows):** tarefa `PlanilhaTrafegoInstagram` no Agendador, **desativada**
+  (ficaria competindo com o VPS). Arquivos em `C:\Users\Rodrigo\Documents\INSTAGRAM (CLaude)`.
 
 ## Se algo der errado
-- Veja o resultado de cada execução em **Actions → "Atualizar Planilha Trafego"** (verde = ok,
-  vermelho = erro; clique no run para ver o log).
-- Causas comuns: token vencido (o dashboard renova sozinho; se o dashboard estiver desligado,
-  reative-o) ou a planilha ter sido movida/renomeada no Drive (o `fileId` muda → avisar o dev).
+- **No VPS:** `ssh -p 22022 root@143.95.213.127` → `tail -30 /root/automacoes/planilha/log.txt`
+  mostra a última execução.
+- **No GitHub:** **Actions → "Atualizar Planilha Trafego"** (verde = ok, vermelho = erro).
+- Causas comuns: token vencido (renova sozinho; se ficar >60 dias sem rodar, gerar novo) ou a
+  planilha ter sido movida/renomeada no Drive (o `fileId` muda → avisar o dev).
