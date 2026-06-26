@@ -295,7 +295,8 @@ def refresh_token():
             print("  Token salvo em token.txt.")
         except Exception as e:
             print(f"  (aviso) falha ao salvar token.txt: {e}")
-    update_github_secret("INSTAGRAM_ACCESS_TOKEN", new_token)
+    if os.getenv("GH_PAT"):
+        update_github_secret("INSTAGRAM_ACCESS_TOKEN", new_token)
 
 
 def update_github_secret(name: str, value: str):
