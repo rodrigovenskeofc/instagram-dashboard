@@ -2,7 +2,11 @@ name: Atualizar Dashboard Instagram
 
 on:
   schedule:
-    - cron: '0 11 * * *'      # 11:00 UTC = 08:00 BRT (horário de Brasília)
+    # O cron do GitHub é "best-effort" e atrasa/descarta execuções no minuto :00
+    # (topo da hora = pico). Por isso usamos minutos fora do pico + um horário de
+    # reforço: se o primeiro for descartado, o segundo garante a atualização do dia.
+    - cron: '17 11 * * *'     # 08:17 BRT
+    - cron: '47 11 * * *'     # 08:47 BRT (reforço)
   workflow_dispatch:           # permite rodar manualmente ("Run workflow")
 
 permissions:
