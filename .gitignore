@@ -15,6 +15,7 @@ historico.db
 historico.db-journal
 historico.db-wal
 historico.db-shm
+_backup_drive_id.txt   # ID do arquivo de backup no Drive (config do VPS)
 
 # Helpers locais (preview / seed) — só para uso local
 _*.ps1
