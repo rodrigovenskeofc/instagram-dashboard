@@ -173,8 +173,11 @@ def fetch_reels(d1, d2):
 def followers_por_dia(d1, d2, total_now):
     """Reconstroi o total de seguidores no fim de cada dia e o ganho diario,
     a partir do insight follower_count (ganhos/dia) + total atual."""
+    # A janela TEM que ir ate hoje: total_now e o valor de HOJE, entao para achar
+    # o total numa data passada precisamos descontar TODOS os ganhos ate hoje.
+    hoje_utc = datetime.now(timezone.utc).date()
     since = int(datetime.combine(d1 - timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc).timestamp())
-    until = int(datetime.combine(d2 + timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc).timestamp())
+    until = int(datetime.combine(hoje_utc + timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc).timestamp())
     gains = {}
     try:
         node = ig_get("me/insights",
