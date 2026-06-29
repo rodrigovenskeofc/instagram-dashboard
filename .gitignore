@@ -10,6 +10,12 @@ __pycache__/
 *.tmp
 .DS_Store
 
+# Banco SQLite do histórico — fica só no VPS (binário, não vai p/ repo público)
+historico.db
+historico.db-journal
+historico.db-wal
+historico.db-shm
+
 # Helpers locais (preview / seed) — só para uso local
 _*.ps1
 preview_local.html

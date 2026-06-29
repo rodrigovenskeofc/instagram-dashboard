@@ -21,6 +21,7 @@ import csv
 import json
 import time
 import base64
+import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -37,6 +38,7 @@ SCRIPT_DIR   = Path(__file__).resolve().parent
 DATA_FILE    = SCRIPT_DIR / "data.json"
 HISTORY_FILE = SCRIPT_DIR / "follower_history.json"
 CSV_FILE     = SCRIPT_DIR / "historico_metricas.csv"   # 1 linha por dia, p/ Excel/Sheets
+DB_FILE      = SCRIPT_DIR / "historico.db"             # banco SQLite — histórico detalhado p/ gráficos
 TOKEN_FILE   = SCRIPT_DIR / "token.txt"                # persistência local do token (VPS)
 
 
@@ -251,7 +253,7 @@ def build_data() -> dict:
 
     top5 = lambda lst: [trim(i) for i in sorted(lst, key=lambda x: x.get("views") or 0, reverse=True)[:5]]
 
-    return {
+    result = {
         "profile": profile,
         "updated_at": datetime.now(BRT).strftime("%d/%m/%Y às %H:%M"),
         "account_stats": {
@@ -271,6 +273,14 @@ def build_data() -> dict:
         "top5_carousels": top5(carousels),
         "follower_history": history,
     }
+
+    # histórico detalhado no banco SQLite (não derruba o build se falhar)
+    try:
+        save_db(result, all_media)
+    except Exception as e:
+        print(f"  (aviso) falha ao salvar no banco SQLite: {e}")
+
+    return result
 
 
 # ─── TOKEN: RENOVAÇÃO AUTOMÁTICA ─────────────────────────────────────────────
@@ -368,6 +378,68 @@ def append_csv(data: dict):
         rows.append(row)
     with CSV_FILE.open("w", encoding="utf-8", newline="") as f:
         csv.writer(f).writerows(rows)
+
+
+# ─── HISTÓRICO EM BANCO SQLITE (para gráficos e comparativos futuros) ─────────
+def save_db(data: dict, all_media: list):
+    """Grava o snapshot do dia no SQLite — idempotente (REPLACE por data/post).
+
+    Duas tabelas:
+      • daily_snapshot  — 1 linha por dia, todas as métricas macro (base p/ gráficos)
+      • media_snapshot  — métricas de cada post, capturadas dia a dia (análise profunda)
+    """
+    p = data["profile"]
+    a = data["account_stats"]
+    r = data["reels_stats"]
+    c = data["carousels_stats"]
+    today = datetime.now(BRT).strftime("%Y-%m-%d")
+    now   = datetime.now(BRT).strftime("%Y-%m-%d %H:%M:%S")
+
+    con = sqlite3.connect(DB_FILE)
+    try:
+        cur = con.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS daily_snapshot (
+            date TEXT PRIMARY KEY, captured_at TEXT,
+            followers INTEGER, follows INTEGER, media_count INTEGER,
+            posts_30d INTEGER, reels_count INTEGER, carrosseis_count INTEGER, posts_count INTEGER,
+            acct_avg_likes REAL, acct_avg_comments REAL, acct_avg_saves REAL,
+            acct_avg_shares REAL, acct_avg_reach REAL,
+            reels_avg_views REAL, reels_avg_reach REAL, reels_avg_eng REAL, reels_avg_likes REAL,
+            reels_avg_comments REAL, reels_avg_saves REAL, reels_avg_shares REAL,
+            carrs_avg_views REAL, carrs_avg_reach REAL, carrs_avg_eng REAL, carrs_avg_likes REAL,
+            carrs_avg_comments REAL, carrs_avg_saves REAL, carrs_avg_shares REAL
+        )""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS media_snapshot (
+            date TEXT, media_id TEXT, media_type TEXT, product_type TEXT,
+            posted_at TEXT, permalink TEXT, caption TEXT,
+            views INTEGER, reach INTEGER, likes INTEGER, comments INTEGER,
+            saved INTEGER, shares INTEGER, total_interactions INTEGER, eng_rate REAL,
+            PRIMARY KEY (date, media_id)
+        )""")
+
+        cur.execute(
+            "INSERT OR REPLACE INTO daily_snapshot VALUES "
+            "(?,?, ?,?,?, ?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?,?,?)",
+            (today, now,
+             p.get("followers_count"), p.get("follows_count"), p.get("media_count"),
+             a["total_posts_30d"], r["count"], c["count"], data["posts_count"],
+             a["avg_likes"], a["avg_comments"], a["avg_saves"], a["avg_shares"], a["avg_reach"],
+             r["avg_views"], r["avg_reach"], r["avg_eng_rate"], r["avg_likes"],
+             r["avg_comments"], r["avg_saves"], r["avg_shares"],
+             c["avg_views"], c["avg_reach"], c["avg_eng_rate"], c["avg_likes"],
+             c["avg_comments"], c["avg_saves"], c["avg_shares"]))
+
+        for it in all_media:
+            cap = (it.get("caption") or "").replace("\n", " ").strip()[:300]
+            cur.execute(
+                "INSERT OR REPLACE INTO media_snapshot VALUES (?,?,?,?, ?,?,?, ?,?,?,?,?,?,?,?)",
+                (today, it.get("id"), it.get("media_type"), it.get("media_product_type"),
+                 it.get("timestamp"), it.get("permalink"), cap,
+                 it.get("views"), it.get("reach"), it.get("like_count"), it.get("comments_count"),
+                 it.get("saved"), it.get("shares"), it.get("total_interactions"), it.get("eng_rate")))
+        con.commit()
+    finally:
+        con.close()
 
 
 # ─── IO ──────────────────────────────────────────────────────────────────────
