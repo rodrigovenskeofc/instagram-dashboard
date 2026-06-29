@@ -48,10 +48,9 @@ DIAS_PT = ["segunda-feira","terça-feira","quarta-feira","quinta-feira",
 # P..S = split de Views por publico (lido da tela de insights, via navegador logado)
 COL = dict(nr=1, distrib=2, seguidores=3, dif=4, atualizacao=5, data=6, dia=7,
            link=8, head=9, views=10, likes=11, coments=12, shares=13, saved=14,
-           alcance=15,
-           vseg_pct=16,   # P - Views Seguidores (%)
-           vnao_pct=17,   # Q - Views Nao-Seguidores (%)
-           vig=18)        # R - Views so do Instagram (total - Facebook)
+           alcance=15)
+# P..S (16..19) foram usadas pelo split/Views-IG via navegador, hoje REMOVIDO
+# (a leitura logada travou a conta). API-only: essas colunas ficam em branco.
 
 # ---------------- credenciais (.env local OU variaveis de ambiente na nuvem) ----------------
 ENV_FILE = PASTA / ".env"
@@ -215,36 +214,8 @@ def drive_update(svc, src):
     media = MediaFileUpload(str(src), mimetype=XLSX_MIME, resumable=True)
     svc.files().update(fileId=FILE_ID, media_body=media, supportsAllDrives=True).execute()
 
-# ---------------- Split de Views (navegador logado) ----------------
-def obter_splits(reels):
-    """Best-effort: le o split seguidor/nao-seguidor das Views de cada Reel,
-    abrindo a tela de insights logado (Playwright). Retorna {link: rec}.
-    Se faltar Playwright/sessao ou der erro, retorna {} sem quebrar o resto."""
-    try:
-        from coletar_views_split import split_de_reels, shortcode_de_link
-    except Exception as e:
-        print(f"AVISO: split indisponivel (sem Playwright/coletor): {e}")
-        return {}
-    pares = [(r["link"], shortcode_de_link(r["link"])) for r in reels]
-    scs = [sc for _, sc in pares if sc]
-    if not scs:
-        return {}
-    try:
-        por_sc = split_de_reels(scs, headless=True)
-    except Exception as e:
-        print(f"AVISO: falha ao ler split (sessao do IG?): {repr(e)[:150]}")
-        return {}
-    out = {}
-    for link, sc in pares:
-        rec = por_sc.get(sc)
-        if rec and not rec.get("erro"):
-            out[link] = rec
-        elif rec and rec.get("erro"):
-            print(f"AVISO split {sc}: {rec['erro']}")
-    return out
-
-# ---------------- Preenchimento ----------------
-def preencher_linha(ws, row, reel, segs, hoje, split=None):
+# ---------------- Preenchimento (API-only) ----------------
+def preencher_linha(ws, row, reel, segs, hoje):
     seg = segs["total"](reel["post"]); dif = segs["dif"](reel["post"])
     reach = reel["alcance"] or 0
     # A (nr) so se estiver vazia: continua a sequencia da linha de cima
@@ -259,29 +230,16 @@ def preencher_linha(ws, row, reel, segs, hoje, split=None):
     ws.cell(row=row, column=COL["dia"]).value     = DIAS_PT[reel["post"].weekday()]
     ws.cell(row=row, column=COL["link"]).value    = reel["link"]
     ws.cell(row=row, column=COL["head"]).value    = reel["head"]
-    # Views = "Visualizacoes" real da tela de insights (a metrica `views` da API
-    # NAO corresponde ao que aparece no app); cai pra API so se a leitura falhar.
-    ws.cell(row=row, column=COL["views"]).value   = (split.get("views")
-            if split and split.get("views") else reel["views"])
+    # Views = metrica `views` da API = Visualizacoes do INSTAGRAM (sem Facebook).
+    ws.cell(row=row, column=COL["views"]).value   = reel["views"]
     ws.cell(row=row, column=COL["likes"]).value   = reel["likes"]
     ws.cell(row=row, column=COL["coments"]).value = reel["coments"]
     ws.cell(row=row, column=COL["shares"]).value  = reel["shares"]
     ws.cell(row=row, column=COL["saved"]).value   = reel["saved"]
     ws.cell(row=row, column=COL["alcance"]).value = reach
-    _set_split(ws, row, split, reel.get("views"))
-
-def _set_split(ws, row, split, views_fallback=0):
-    """Escreve: P=seg%, Q=nao% (split do total) e R=Views so do Instagram (total-FB)."""
-    if not (split and split.get("seg_pct") is not None):
-        return False
-    sp = split["seg_pct"]
-    npc = split["nao_pct"] if split.get("nao_pct") is not None else (100 - sp)
-    cP = ws.cell(row=row, column=COL["vseg_pct"]); cP.value = round(sp/100, 4); cP.number_format = "0.0%"
-    cQ = ws.cell(row=row, column=COL["vnao_pct"]); cQ.value = round(npc/100, 4); cQ.number_format = "0.0%"
-    if split.get("ig_views") is not None:
-        ws.cell(row=row, column=COL["vig"]).value = split["ig_views"]   # R - Views so Instagram
-    ws.cell(row=row, column=19).value = None  # limpa S antiga (numero absoluto removido)
-    return True
+    # API-only: limpa as colunas P..S (split/Views-IG do navegador, descontinuado).
+    for c in (16, 17, 18, 19):
+        ws.cell(row=row, column=c).value = None
 
 def proxima_linha_vazia(ws, start=60):
     r = start
@@ -295,8 +253,6 @@ def main():
     ap.add_argument("--range", nargs=2, metavar=("INICIO", "FIM"))
     ap.add_argument("--start-row", type=int, default=60)
     ap.add_argument("--daily", action="store_true")
-    ap.add_argument("--split-existing", action="store_true",
-                    help="(re)preenche P..S (split de Views) das linhas ja existentes")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -308,31 +264,6 @@ def main():
     total_now = int(prof.get("followers_count") or 0)
     print(f"Conta: @{prof.get('username')} | Seguidores: {total_now}")
     hoje = datetime.now(BRT).date()
-
-    if args.split_existing:
-        svc = drive()
-        src = PASTA / "planilha_drive_atual.xlsx"
-        drive_download(svc, src)
-        wb = openpyxl.load_workbook(src); ws = wb[ABA]
-        reels, rowmap = [], {}
-        for r in range(60, ws.max_row + 1):
-            link = ws.cell(row=r, column=COL["link"]).value
-            if link:
-                reels.append({"link": link, "views": ws.cell(row=r, column=COL["views"]).value})
-                rowmap[link] = r
-        print(f"Lendo split de {len(reels)} Reels ja na planilha...")
-        splits = obter_splits(reels)
-        n = 0
-        for link, rec in splits.items():
-            r = rowmap[link]
-            if rec.get("views"):   # corrige Views (J) com a Visualizacao real da tela
-                ws.cell(row=r, column=COL["views"]).value = rec["views"]
-            if _set_split(ws, r, rec, rec.get("views")):
-                n += 1
-                print(f"  L{r}: views={rec.get('views')} seg={rec['seg_pct']}% nao={rec['nao_pct']}%")
-        wb.save(src); drive_update(svc, src)
-        print(f"OK -> split gravado em {n} linha(s).")
-        return
 
     if args.daily:
         # alvo: Reels postados ate (hoje - DELAY_DIAS).
@@ -369,13 +300,10 @@ def main():
             print(f"Nenhum Reel novo (ultimo registrado: {ultima:%d/%m/%Y})."); return
 
         segs = followers_por_dia(min(x["post"] for x in novos), alvo_max, total_now)
-        splits = obter_splits(novos)   # best-effort (P..S)
         row = proxima_linha_vazia(ws, 60)
         for reel in novos:
-            preencher_linha(ws, row, reel, segs, hoje, split=splits.get(reel["link"]))
-            sp = splits.get(reel["link"])
-            extra = f" | seg={sp['seg_pct']}%/nao={sp['nao_pct']}%" if sp else " | split=---"
-            print(f"L{row} <- {reel['post']:%d/%m/%Y} | views={reel['views']} reach={reel['alcance']}{extra}")
+            preencher_linha(ws, row, reel, segs, hoje)
+            print(f"L{row} <- {reel['post']:%d/%m/%Y} | views={reel['views']} reach={reel['alcance']}")
             row += 1
         wb.save(src)
         if svc:
